@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 from ..paths import ProjectPaths
-from ..runner import CommandResult, maybe_sudo, run_command
+from ..runner import SUDO_HINT, CommandResult, is_root, run_command
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from ..config import Config
@@ -99,15 +99,25 @@ class Operation:
             return OperationRunResult(
                 op_id=self.id, status="skipped", message="no command"
             )
-        final_cmd = maybe_sudo(command, needs_root=self.requires_root)
+        # PyNmap expects to be launched with the privileges its scans need
+        # (``sudo pynmap``); privileged operations inherit the process's root
+        # rather than being individually wrapped in ``sudo``. Fail fast with a
+        # clear hint when a privileged operation is requested unprivileged.
+        if self.requires_root and not is_root():
+            ctx.log(f"Cannot run {self.id} without root -- {SUDO_HINT}")
+            return OperationRunResult(
+                op_id=self.id,
+                status="failed",
+                message=f"needs root -- {SUDO_HINT}",
+            )
         log_file = ctx.run_logs_dir / f"{self.id}.log"
-        ctx.log(f"Running {self.id}: {' '.join(final_cmd)}")
-        result = run_command(final_cmd, log_file=log_file)
+        ctx.log(f"Running {self.id}: {' '.join(command)}")
+        result = run_command(command, log_file=log_file)
         status = "complete" if self._accept_return_code(result) else "failed"
         return OperationRunResult(
             op_id=self.id,
             status=status,
-            command=final_cmd,
+            command=command,
             return_code=result.return_code,
         )
 

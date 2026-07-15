@@ -26,7 +26,7 @@ from .operations.base import OperationRunResult
 from .parsers import nmap_xml
 from .parsers.targets import parse_targets_text, TargetSet
 from .paths import ProjectPaths
-from .runner import ScanInterrupted
+from .runner import SUDO_HINT, ScanInterrupted, is_root
 from .comparison.diff import diff_inventories, render_html, write_diff
 from .comparison.models import ScanDiff
 
@@ -239,6 +239,14 @@ def run_operations(
 
     to_execute = [op_id for op_id in resolved if _should_run(op_id)]
     total = len(to_execute)
+
+    privileged = [o for o in to_execute if REGISTRY[o].requires_root]
+    if privileged and not is_root():
+        observer.warning(
+            "Not running as root: the scans "
+            f"({', '.join(privileged)}) need raw sockets and will be skipped. "
+            f"{SUDO_HINT}."
+        )
 
     observer.run_started(to_execute)
     try:

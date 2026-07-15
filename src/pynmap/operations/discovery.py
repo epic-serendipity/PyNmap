@@ -18,8 +18,8 @@ class DiscoveryOperation(Operation):
     # The ICMP (-PE/-PP), TCP ACK (-PA) and UDP (-PU) host-discovery probes all
     # require raw sockets. Without root Nmap silently downgrades to TCP connect()
     # probes, which mark firewalled/RST-replying hosts as "up" and produce false
-    # positives in the live-host list. Run discovery privileged (sudo) so the
-    # probes behave as intended.
+    # positives in the live-host list. PyNmap must therefore run as root
+    # (``sudo pynmap``) for discovery to behave as intended.
     requires_root = True
 
     def build_command(self, ctx: ScanContext) -> Optional[list[str]]:
