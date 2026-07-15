@@ -85,11 +85,34 @@ def test_extract_live_hosts_falls_back_to_xml(tmp_path):
     assert project.live_hosts.read_text().split() == ["192.168.1.5"]
 
 
-def test_extract_live_hosts_falls_back_to_targets(tmp_path):
+def test_extract_live_hosts_does_not_treat_targets_as_live(tmp_path):
     project = _project(tmp_path)
     project.targets_normalized.write_text("10.0.0.1\n10.0.0.2\n", encoding="utf-8")
 
     count = extract_live_hosts(project)
 
-    assert count == 2
-    assert project.live_hosts.read_text().split() == ["10.0.0.1", "10.0.0.2"]
+    assert count == 0
+    assert not project.live_hosts.exists()
+
+
+def test_extract_live_hosts_removes_stale_list_without_discovery_output(tmp_path):
+    project = _project(tmp_path)
+    project.live_hosts.write_text("10.0.0.1\n", encoding="utf-8")
+
+    count = extract_live_hosts(project)
+
+    assert count == 0
+    assert not project.live_hosts.exists()
+
+
+def test_extract_live_hosts_writes_empty_list_when_no_hosts_are_up(tmp_path):
+    project = _project(tmp_path)
+    (project.discovery_dir / "discovery.gnmap").write_text(
+        "Host: 10.0.0.1 ()\tStatus: Down\n", encoding="utf-8"
+    )
+
+    count = extract_live_hosts(project)
+
+    assert count == 0
+    assert project.live_hosts.exists()
+    assert project.live_hosts.read_text(encoding="utf-8") == ""

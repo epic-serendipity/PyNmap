@@ -93,8 +93,9 @@ def extract_live_hosts(project: ProjectPaths) -> int:
 
     Deriving the list from the ``Status: Up`` lines avoids the false positives
     that arise from inferring host state elsewhere. The greppable (``.gnmap``)
-    file is preferred; the parser falls back to the XML output and finally to the
-    normalised targets when no discovery output is present.
+    file is preferred and the parser falls back to the XML output. Missing
+    discovery output is never replaced with the original target list: doing so
+    would incorrectly treat unverified targets as live.
     Returns the number of live hosts written.
     """
     project.input_dir.mkdir(parents=True, exist_ok=True)
@@ -105,10 +106,10 @@ def extract_live_hosts(project: ProjectPaths) -> int:
         text = "\n".join(live) + ("\n" if live else "")
         project.live_hosts.write_text(text, encoding="utf-8")
         return len(live)
-    # Fallback: use the normalised targets so scans can still proceed.
-    if project.targets_normalized.exists():
-        shutil.copyfile(project.targets_normalized, project.live_hosts)
-    return sum(1 for _ in project.live_hosts.read_text().splitlines()) if project.live_hosts.exists() else 0
+    # Do not leave a list from an earlier run in place when current discovery
+    # output is unavailable.
+    project.live_hosts.unlink(missing_ok=True)
+    return 0
 
 
 def _live_hosts_from_gnmap(gnmap_path: Path) -> Optional[list[str]]:
@@ -258,10 +259,48 @@ def run_operations(
             if op.uses_live_hosts and not project.live_hosts.exists():
                 extract_live_hosts(project)
 
+            skip_message = ""
+            if op.uses_live_hosts:
+                discovery_result = next(
+                    (result for result in outcome.results if result.op_id == "discovery"),
+                    None,
+                )
+                if discovery_result is not None and discovery_result.status != "complete":
+                    skip_message = "discovery did not complete successfully"
+                elif (
+                    not project.live_hosts.exists()
+                    or not any(
+                        line.strip()
+                        for line in project.live_hosts.read_text(
+                            encoding="utf-8", errors="replace"
+                        ).splitlines()
+                    )
+                ):
+                    skip_message = "discovery did not identify any live hosts"
+
             manifest.mark_operation(op_id, OperationState.RUNNING.value)
             manifest_mod.save_manifest(project.root, manifest)
 
             started = now_iso()
+            if skip_message:
+                result = OperationRunResult(
+                    op_id=op_id, status="skipped", message=skip_message
+                )
+                manifest.mark_operation(op_id, result.status)
+                manifest_mod.save_manifest(project.root, manifest)
+                run_records.append({
+                    "operation": op_id,
+                    "started_at": started,
+                    "finished_at": now_iso(),
+                    "status": result.status,
+                    "command": result.command,
+                })
+                outcome.results.append(result)
+                observer.operation_end(result)
+                observer.warning(f"Skipping {op_id}: {skip_message}.")
+                logger.info("Finished operation %s -> %s", op_id, result.status)
+                continue
+
             try:
                 result = op.run(ctx)
             except ScanInterrupted:
