@@ -1,4 +1,4 @@
-"""Parse Nmap XML output into the internal :mod:`netmapper.models` structures.
+"""Parse Nmap XML output into the internal :mod:`pynmap.models` structures.
 
 Uses ``lxml`` when available for speed, falling back to the standard library
 ``xml.etree.ElementTree``. The parser never trusts filenames: it verifies that

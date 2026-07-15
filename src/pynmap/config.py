@@ -1,4 +1,4 @@
-"""User configuration stored at ``~/.config/netmapper/config.json``."""
+"""User configuration stored at ``~/.config/pynmap/config.json``."""
 
 from __future__ import annotations
 

@@ -134,7 +134,7 @@ def create_project(
 
 def _safe_dirname(name: str) -> str:
     safe = "".join(c if c.isalnum() or c in "-_." else "-" for c in name.strip())
-    return safe.strip("-_.") or "netmapper-scan"
+    return safe.strip("-_.") or "pynmap-scan"
 
 
 # --- run loop --------------------------------------------------------------

@@ -1,8 +1,8 @@
-"""Filesystem locations used by NetMapper.
+"""Filesystem locations used by PyNmap.
 
 This module centralises the XDG-style directories used for configuration and
 the global registry, plus the canonical layout of a generated scan project.
-Keeping every path in one place makes it easy to reason about where NetMapper
+Keeping every path in one place makes it easy to reason about where PyNmap
 reads and writes data, and simplifies testing (the base directories can be
 overridden through environment variables).
 """
@@ -14,10 +14,10 @@ from pathlib import Path
 
 from . import TOOL_NAME
 
-# Environment variables that let tests (or power users) relocate NetMapper's
+# Environment variables that let tests (or power users) relocate PyNmap's
 # state without touching the real user directories.
-ENV_CONFIG_HOME = "NETMAPPER_CONFIG_HOME"
-ENV_DATA_HOME = "NETMAPPER_DATA_HOME"
+ENV_CONFIG_HOME = "PYNMAP_CONFIG_HOME"
+ENV_DATA_HOME = "PYNMAP_DATA_HOME"
 
 
 def _xdg_home(env_var: str, default_subdir: str) -> Path:
@@ -31,7 +31,7 @@ def _xdg_home(env_var: str, default_subdir: str) -> Path:
 
 
 def config_dir() -> Path:
-    """Directory that holds ``config.json`` (``~/.config/netmapper``)."""
+    """Directory that holds ``config.json`` (``~/.config/pynmap``)."""
     override = os.environ.get(ENV_CONFIG_HOME)
     if override:
         return Path(override).expanduser()
@@ -41,7 +41,7 @@ def config_dir() -> Path:
 
 
 def data_dir() -> Path:
-    """Directory that holds ``scans.db`` (``~/.local/share/netmapper``)."""
+    """Directory that holds ``scans.db`` (``~/.local/share/pynmap``)."""
     override = os.environ.get(ENV_DATA_HOME)
     if override:
         return Path(override).expanduser()
@@ -140,7 +140,7 @@ class ProjectPaths:
 
     @property
     def log_file(self) -> Path:
-        return self.logs_dir / "netmapper.log"
+        return self.logs_dir / "pynmap.log"
 
     def run_dir(self, run_id: str) -> Path:
         return self.runs_dir / run_id

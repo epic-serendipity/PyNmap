@@ -64,7 +64,7 @@ def render_fallback_report(
     parts: list[str] = []
     parts.append("<!DOCTYPE html>")
     parts.append('<html lang="en"><head><meta charset="utf-8">')
-    parts.append(f"<title>NetMapper report: {esc(name)}</title>")
+    parts.append(f"<title>PyNmap report: {esc(name)}</title>")
     parts.append(
         "<style>"
         "body{font-family:Helvetica,Arial,sans-serif;margin:2rem;color:#1c2b3a;}"
@@ -76,7 +76,7 @@ def render_fallback_report(
         ".summary{background:#f6f8fa;padding:1rem;border-radius:6px;}"
         "</style></head><body>"
     )
-    parts.append(f"<h1>NetMapper scan report{': ' + esc(name) if name else ''}</h1>")
+    parts.append(f"<h1>PyNmap scan report{': ' + esc(name) if name else ''}</h1>")
     total_open = sum(len(h.open_ports()) for h in live)
     parts.append('<div class="summary">')
     parts.append(f"<p>Generated: {esc(generated)}</p>")

@@ -3,13 +3,13 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "netmapper"
+name = "pynmap"
 version = "0.1.0"
 description = "Interactive CLI/TUI that orchestrates Nmap scans, parses XML, tracks scan metadata, compares runs, and generates reports and Graphviz maps."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-authors = [{ name = "NetMapper contributors" }]
+authors = [{ name = "PyNmap contributors" }]
 keywords = ["nmap", "network", "security", "scanning", "cli", "tui"]
 classifiers = [
     "Environment :: Console",
@@ -31,7 +31,7 @@ lxml = ["lxml>=4.9"]
 dev = ["pytest>=7.0"]
 
 [project.scripts]
-netmapper = "netmapper.main:main"
+pynmap = "pynmap.main:main"
 
 [project.urls]
 Homepage = "https://github.com/"
@@ -44,7 +44,7 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-netmapper = ["reporting/templates/*.xsl", "reporting/templates/*.html"]
+pynmap = ["reporting/templates/*.xsl", "reporting/templates/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

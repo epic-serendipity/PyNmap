@@ -88,9 +88,9 @@ def write_summary_txt(inventory: Inventory, path: Path, name: str = "") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     lines: list[str] = []
     if name:
-        lines.append(f"NetMapper scan summary: {name}")
+        lines.append(f"PyNmap scan summary: {name}")
     else:
-        lines.append("NetMapper scan summary")
+        lines.append("PyNmap scan summary")
     if inventory.generated_at:
         lines.append(f"Generated: {inventory.generated_at.isoformat()}")
     live = inventory.live_hosts()

@@ -11,6 +11,6 @@ dist/
 .venv/
 venv/
 
-# NetMapper scan output (do not commit generated projects)
+# PyNmap scan output (do not commit generated projects)
 *.nmap
 *.gnmap

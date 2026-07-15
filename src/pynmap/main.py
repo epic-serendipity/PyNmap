@@ -1,6 +1,6 @@
 """Program entry point.
 
-With no arguments, NetMapper opens the interactive menu. With arguments, it
+With no arguments, PyNmap opens the interactive menu. With arguments, it
 dispatches to the Typer CLI so the tool remains scriptable.
 """
 

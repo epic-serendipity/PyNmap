@@ -20,7 +20,7 @@ class NetworkMapOperation(Operation):
 
     def run(self, ctx: ScanContext) -> OperationRunResult:
         inventory = build_project_inventory(ctx)
-        title = ctx.manifest.name or "NetMapper"
+        title = ctx.manifest.name or "PyNmap"
         results = gv.generate_map(inventory, ctx.project.maps_dir, title)
         rendered = [fmt for fmt, path in results.items() if path is not None]
         message = "rendered: " + ", ".join(rendered)
