@@ -105,6 +105,7 @@ def artifact_menu(project: ProjectPaths) -> list[tuple[str, Path, str]]:
         ("Service inventory", project.inventory_dir / "services.csv", "text"),
         ("Latest changes", project.changes_dir / "latest-diff.txt", "text"),
         ("Network map SVG", project.maps_dir / "network-map.svg", "external"),
+        ("Network map PNG", project.maps_dir / "network-map.png", "external"),
         ("HTML scan report", project.reports_dir / "scan-report.html", "external"),
         ("Project directory", project.root, "dir"),
     ]

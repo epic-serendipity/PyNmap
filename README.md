@@ -39,6 +39,17 @@ PyNmap
   without redundantly rescanning completed work.
 - **Scan profiles**: recommended, fast, comprehensive, and passive
   (regenerate reports from existing XML only).
+- **Reporting runs last**: operations are ordered so every data-collection
+  scan finishes before the inventory, HTML report, and network map are built.
+  Generating the graphic is the very last step, so the map always reflects
+  *all* data the run gathered (OS guesses, service versions, UDP ports,
+  MAC/vendor, NSE script output, and traceroute paths) regardless of the order
+  operations were requested in.
+- **Two network-map styles**: an `enhanced` map (default) with per-host
+  HTML-table nodes — colour-coded open TCP/UDP ports, service versions, OS,
+  MAC, NSE scripts, per-/24 subnet grouping, a legend, and a scan-coverage
+  node — and a compact `standard` text-label map. Toggle in **Settings**
+  (`map_style`).
 - **Resumable**: operation states (`pending`/`running`/`complete`/`failed`/
   `cancelled`/`stale`) are written immediately; Ctrl+C stops the active Nmap
   process, marks the operation cancelled, and preserves partial files.
@@ -150,6 +161,13 @@ testing with `PYNMAP_CONFIG_HOME` / `PYNMAP_DATA_HOME`.
 
 Selecting an operation automatically pulls in its prerequisites. For example,
 selecting **Network map** re-selects discovery, inventory, and traceroute.
+
+Operations also carry a run-order priority so that, whatever set is selected,
+data-collection scans always run before the derived outputs. The inventory is
+built after every scan, then the HTML report, and finally the network map —
+ensuring the graphic captures everything the run collected. Only genuine
+prerequisites are ever added: requesting the map does **not** silently pull in
+unrelated scans such as OS detection or UDP.
 
 ## Project layout
 

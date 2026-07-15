@@ -41,6 +41,7 @@ class TcpTop1000Operation(_BaseTcpOperation):
     description = "SYN scan of the top 1000 TCP ports on live hosts."
     dependencies = ("discovery",)
     outputs = ("tcp/top-1000/tcp-top-1000.xml",)
+    order = 20
     port_args = ("--top-ports", "1000")
     output_stem_rel = "tcp/top-1000/tcp-top-1000"
 
@@ -51,6 +52,7 @@ class TcpFullOperation(_BaseTcpOperation):
     description = "SYN scan of all 65535 TCP ports (slow, high traffic)."
     dependencies = ("discovery",)
     outputs = ("tcp/full/tcp-full.xml",)
+    order = 25
     port_args = ("-p-",)
     output_stem_rel = "tcp/full/tcp-full"
 
@@ -68,6 +70,7 @@ class ServiceDetectionOperation(Operation):
     description = "Identify service names, products and versions on open ports."
     dependencies = ("tcp_top_1000",)
     outputs = ()
+    order = 30
     becomes_stale = True
     rerun_on_update = True
     is_modifier = True

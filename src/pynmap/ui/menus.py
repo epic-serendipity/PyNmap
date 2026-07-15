@@ -365,6 +365,7 @@ def flow_settings(config: Config) -> None:
     table.add_row("Default timing", config.default_timing)
     table.add_row("Open results after scan", str(config.open_results_after_scan))
     table.add_row("Show scan progress spinner", str(config.show_progress))
+    table.add_row("Network map style", config.map_style)
     table.add_row("WSL browser command", config.wsl_browser_command)
     table.add_row("Last selected operations", ", ".join(config.last_selected_operations))
     console.print(table)
@@ -375,6 +376,7 @@ def flow_settings(config: Config) -> None:
             ("timing", "Default Nmap timing (T0-T5)"),
             ("open", "Toggle open-results-after-scan"),
             ("progress", "Toggle scan progress spinner"),
+            ("mapstyle", "Toggle network map style (enhanced/standard)"),
             ("browser", "WSL browser command"),
             ("reset", "Reset operations to recommended defaults"),
             ("back", "Back"),
@@ -388,6 +390,8 @@ def flow_settings(config: Config) -> None:
         config.open_results_after_scan = not config.open_results_after_scan
     elif choice == "progress":
         config.show_progress = not config.show_progress
+    elif choice == "mapstyle":
+        config.map_style = "standard" if config.map_style == "enhanced" else "enhanced"
     elif choice == "browser":
         config.wsl_browser_command = selections.prompt_text(
             "WSL browser command:", default=config.wsl_browser_command

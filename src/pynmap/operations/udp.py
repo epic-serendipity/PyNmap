@@ -13,6 +13,7 @@ class UdpTop50Operation(Operation):
     description = "UDP scan of the top 50 UDP ports on live hosts."
     dependencies = ("discovery",)
     outputs = ("udp/top-50/udp-top-50.xml",)
+    order = 40
     becomes_stale = True
     rerun_on_update = True
     requires_root = True  # UDP scan needs raw sockets
