@@ -42,6 +42,11 @@ PyNmap
 - **Resumable**: operation states (`pending`/`running`/`complete`/`failed`/
   `cancelled`/`stale`) are written immediately; Ctrl+C stops the active Nmap
   process, marks the operation cancelled, and preserves partial files.
+- **Live progress feedback**: while an operation runs, an ASCII loading spinner
+  shows work is happening, and pressing **space** prints a brief Nmap-style
+  progress report (elapsed time, current operation, and what is left). This is
+  automatic in an interactive terminal and can be toggled in **Settings**
+  (`show_progress`); it is skipped for non-interactive output (pipes/logs).
 
 ## Requirements
 
@@ -144,7 +149,7 @@ selecting **Network map** re-selects discovery, inventory, and traceroute.
 ```
 src/pynmap/
 ├── main.py cli.py config.py models.py paths.py manifest.py
-├── registry.py runner.py engine.py profiles.py log.py
+├── registry.py runner.py engine.py profiles.py log.py progress.py
 ├── operations/   # base + discovery/tcp/udp/os_detection/traceroute/reports/mapping
 ├── parsers/      # nmap_xml, targets
 ├── comparison/   # diff, models

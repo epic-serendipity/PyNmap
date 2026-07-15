@@ -40,6 +40,14 @@ class Observer:
     def warning(self, message: str) -> None:  # pragma: no cover - trivial
         pass
 
+    def run_started(self, op_ids: Sequence[str]) -> None:
+        """Called once before the first operation with the planned op ids."""
+        pass
+
+    def run_finished(self) -> None:
+        """Called once after the run finishes (or is interrupted)."""
+        pass
+
     def operation_start(self, op_id: str, index: int, total: int) -> None:
         pass
 
@@ -196,54 +204,58 @@ def run_operations(
     to_execute = [op_id for op_id in resolved if _should_run(op_id)]
     total = len(to_execute)
 
-    for index, op_id in enumerate(to_execute, start=1):
-        op = REGISTRY[op_id]
-        observer.operation_start(op_id, index, total)
-        logger.info("Starting operation %s", op_id)
+    observer.run_started(to_execute)
+    try:
+        for index, op_id in enumerate(to_execute, start=1):
+            op = REGISTRY[op_id]
+            observer.operation_start(op_id, index, total)
+            logger.info("Starting operation %s", op_id)
 
-        if op.uses_live_hosts and not project.live_hosts.exists():
-            extract_live_hosts(project)
+            if op.uses_live_hosts and not project.live_hosts.exists():
+                extract_live_hosts(project)
 
-        manifest.mark_operation(op_id, OperationState.RUNNING.value)
-        manifest_mod.save_manifest(project.root, manifest)
-
-        started = now_iso()
-        try:
-            result = op.run(ctx)
-        except ScanInterrupted:
-            manifest.mark_operation(op_id, OperationState.CANCELLED.value)
+            manifest.mark_operation(op_id, OperationState.RUNNING.value)
             manifest_mod.save_manifest(project.root, manifest)
+
+            started = now_iso()
+            try:
+                result = op.run(ctx)
+            except ScanInterrupted:
+                manifest.mark_operation(op_id, OperationState.CANCELLED.value)
+                manifest_mod.save_manifest(project.root, manifest)
+                run_records.append({
+                    "operation": op_id,
+                    "started_at": started,
+                    "finished_at": now_iso(),
+                    "status": "cancelled",
+                })
+                observer.warning(f"Operation {op_id} cancelled (Ctrl+C).")
+                outcome.interrupted = True
+                outcome.results.append(
+                    OperationRunResult(op_id=op_id, status="cancelled")
+                )
+                break
+
+            manifest.mark_operation(op_id, result.status, result.return_code)
+            manifest_mod.save_manifest(project.root, manifest)
+
+            if op_id == "discovery" and result.status == "complete":
+                live_count = extract_live_hosts(project)
+                observer.info(f"Discovery found {live_count} live host(s).")
+
             run_records.append({
                 "operation": op_id,
                 "started_at": started,
                 "finished_at": now_iso(),
-                "status": "cancelled",
+                "return_code": result.return_code,
+                "status": result.status,
+                "command": result.command,
             })
-            observer.warning(f"Operation {op_id} cancelled (Ctrl+C).")
-            outcome.interrupted = True
-            outcome.results.append(
-                OperationRunResult(op_id=op_id, status="cancelled")
-            )
-            break
-
-        manifest.mark_operation(op_id, result.status, result.return_code)
-        manifest_mod.save_manifest(project.root, manifest)
-
-        if op_id == "discovery" and result.status == "complete":
-            live_count = extract_live_hosts(project)
-            observer.info(f"Discovery found {live_count} live host(s).")
-
-        run_records.append({
-            "operation": op_id,
-            "started_at": started,
-            "finished_at": now_iso(),
-            "return_code": result.return_code,
-            "status": result.status,
-            "command": result.command,
-        })
-        outcome.results.append(result)
-        observer.operation_end(result)
-        logger.info("Finished operation %s -> %s", op_id, result.status)
+            outcome.results.append(result)
+            observer.operation_end(result)
+            logger.info("Finished operation %s -> %s", op_id, result.status)
+    finally:
+        observer.run_finished()
 
     _write_run_record(run_dir, run_id, run_records)
     status = "interrupted" if outcome.interrupted else (

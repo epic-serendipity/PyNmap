@@ -22,6 +22,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Sequence
 
+from . import progress
+
 
 class ScanInterrupted(Exception):
     """Raised when the user interrupts a running command with Ctrl+C."""
@@ -115,13 +117,19 @@ def run_command(
 
         proc = subprocess.Popen(
             cmd,
+            stdin=subprocess.DEVNULL,
             stdout=stdout_target,
             stderr=stderr_target,
             text=True,
             cwd=str(cwd) if cwd else None,
         )
         try:
-            out, _ = proc.communicate()
+            # Spin the ASCII progress indicator (and listen for the spacebar)
+            # while the child command runs. This is a no-op when no interactive
+            # monitor is active. ``sudo`` still prompts via the controlling
+            # terminal, so redirecting the child's stdin does not break it.
+            with progress.active_subprocess():
+                out, _ = proc.communicate()
         except KeyboardInterrupt:
             _terminate(proc)
             raise ScanInterrupted(" ".join(cmd))

@@ -33,6 +33,8 @@ class Config:
     default_timing: str = "T4"
     open_results_after_scan: bool = True
     wsl_browser_command: str = "explorer.exe"
+    #: Show the ASCII spinner and spacebar progress report during scans.
+    show_progress: bool = True
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
