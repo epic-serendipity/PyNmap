@@ -2,9 +2,11 @@
 
 Commands are always passed as an argument list -- never a shell string -- so
 user-controlled paths cannot cause command injection or quoting problems.
-The runner also handles:
+PyNmap is meant to be launched with the privileges its scans require (i.e.
+``sudo pynmap``), so privileged Nmap operations run directly and inherit the
+process's root privileges rather than being individually prefixed with
+``sudo``. The runner also handles:
 
-* Optional ``sudo`` prefixing for privileged Nmap operations.
 * Root/privilege detection.
 * Ctrl+C handling: the active child is terminated, the partial output is left
   in place, and a :class:`ScanInterrupted` is raised so callers can mark the
@@ -29,6 +31,10 @@ class ScanInterrupted(Exception):
     """Raised when the user interrupts a running command with Ctrl+C."""
 
 
+#: Hint shown when a privileged scan is requested without root privileges.
+SUDO_HINT = "run PyNmap as root, e.g. `sudo pynmap`"
+
+
 @dataclass
 class CommandResult:
     command: list[str]
@@ -50,30 +56,6 @@ def is_root() -> bool:
 
 def has_command(name: str) -> bool:
     return shutil.which(name) is not None
-
-
-def has_passwordless_sudo() -> bool:
-    """Best-effort check that ``sudo`` can run without prompting."""
-    if is_root() or not has_command("sudo"):
-        return is_root()
-    try:
-        result = subprocess.run(
-            ["sudo", "-n", "true"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=5,
-        )
-        return result.returncode == 0
-    except (subprocess.SubprocessError, OSError):
-        return False
-
-
-def maybe_sudo(command: Sequence[str], *, needs_root: bool) -> list[str]:
-    """Prefix ``sudo`` only when root is required and we are not already root."""
-    cmd = list(command)
-    if needs_root and not is_root() and has_command("sudo"):
-        return ["sudo", *cmd]
-    return cmd
 
 
 def _now_iso() -> str:
@@ -126,8 +108,7 @@ def run_command(
         try:
             # Spin the ASCII progress indicator (and listen for the spacebar)
             # while the child command runs. This is a no-op when no interactive
-            # monitor is active. ``sudo`` still prompts via the controlling
-            # terminal, so redirecting the child's stdin does not break it.
+            # monitor is active.
             with progress.active_subprocess():
                 out, _ = proc.communicate()
         except KeyboardInterrupt:

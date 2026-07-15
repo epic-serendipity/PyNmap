@@ -24,8 +24,8 @@ PyNmap
 ## Features
 
 - **Interactive menu** (Rich + InquirerPy) *and* scriptable subcommands (Typer).
-- **Nmap orchestration** via argument lists (never `shell=True`), with optional
-  `sudo` prefixing only for privileged scans.
+- **Nmap orchestration** via argument lists (never `shell=True`); run the tool
+  as root (`sudo pynmap`) so its privileged scans can use raw sockets.
 - **Nmap XML is the source of truth** — normalised into an internal
   host/port/OS/route model, then exported to JSON, CSV, HTML, and Graphviz.
 - **Portable projects**: every scan directory is self-contained with a
@@ -75,27 +75,34 @@ This installs the `pynmap` command.
 Run with no arguments to open the interactive menu:
 
 ```bash
-pynmap
+sudo pynmap
 ```
 
 Or use the direct subcommands:
 
 ```bash
-pynmap new                              # interactive prompts
-pynmap new -t targets.txt -n MyScan -o /out --profile recommended
-pynmap update /path/to/scan
-pynmap enhance /path/to/scan --operations udp_top_50,tcp_full
-pynmap view /path/to/scan
-pynmap history
+sudo pynmap new                              # interactive prompts
+sudo pynmap new -t targets.txt -n MyScan -o /out --profile recommended
+sudo pynmap update /path/to/scan
+sudo pynmap enhance /path/to/scan --operations udp_top_50,tcp_full
+pynmap view /path/to/scan                    # read-only; no root needed
+pynmap history                               # read-only; no root needed
 ```
 
 ### Privileges
 
-SYN (`-sS`), UDP (`-sU`), OS detection (`-O`), and traceroute need root.
-PyNmap runs the Python program as your normal user and prefixes only the
-privileged Nmap commands with `sudo`, so project files stay owned by you. Run
-with passwordless `sudo` configured for a smooth experience, or launch the whole
-program with `sudo` if you prefer.
+**Run PyNmap as root — `sudo pynmap`.** Host discovery (its ICMP/`-PE`/`-PP`,
+TCP ACK `-PA`, and UDP `-PU` ping probes), SYN (`-sS`), UDP (`-sU`), OS detection
+(`-O`), and traceroute all need raw sockets, which require root. Running them
+unprivileged makes Nmap silently downgrade to TCP connect() probes, which report
+false-positive live hosts and unreliable results.
+
+PyNmap assumes it is launched with the privileges its scans need, so it runs the
+Nmap commands directly (no per-command `sudo` prefixing). If a scan-running
+command is invoked without root, the privileged operations are skipped with a
+notice to re-run with `sudo pynmap`. Read-only commands (`view`, `history`) do
+not need root. Because the whole program runs as root, generated scan files are
+owned by root; use `sudo chown` afterwards if you need them owned by your user.
 
 ## Generated scan directory
 

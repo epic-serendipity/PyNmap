@@ -26,7 +26,7 @@ from .operations.base import OperationRunResult
 from .parsers import nmap_xml
 from .parsers.targets import parse_targets_text, TargetSet
 from .paths import ProjectPaths
-from .runner import ScanInterrupted
+from .runner import SUDO_HINT, ScanInterrupted, is_root
 from .comparison.diff import diff_inventories, render_html, write_diff
 from .comparison.models import ScanDiff
 
@@ -84,17 +84,24 @@ def prepare_targets(project: ProjectPaths, targets_text: str) -> tuple[TargetSet
 
 
 def extract_live_hosts(project: ProjectPaths) -> int:
-    """Parse discovery XML for up hosts and write live-hosts.txt.
+    """Determine live hosts from the discovery scan and write live-hosts.txt.
 
-    Falls back to the normalised targets when no discovery XML is present.
+    Only hosts Nmap explicitly reported as ``Up`` in its greppable output are
+    treated as live. This mirrors the authoritative host-discovery verdict::
+
+        awk '/Status: Up/{print $2}' discovery.gnmap | sort -Vu
+
+    Deriving the list from the ``Status: Up`` lines avoids the false positives
+    that arise from inferring host state elsewhere. The greppable (``.gnmap``)
+    file is preferred; the parser falls back to the XML output and finally to the
+    normalised targets when no discovery output is present.
     Returns the number of live hosts written.
     """
-    discovery_xml = project.discovery_dir / "discovery.xml"
     project.input_dir.mkdir(parents=True, exist_ok=True)
-    if discovery_xml.exists() and nmap_xml.is_nmap_xml(discovery_xml):
-        hosts = nmap_xml.parse_file(discovery_xml)
-        live = [h.address for h in hosts if h.status == "up" and h.address != "unknown"]
-        live = sorted(set(live), key=_ip_key)
+    live = _live_hosts_from_gnmap(project.discovery_dir / "discovery.gnmap")
+    if live is None:
+        live = _live_hosts_from_xml(project.discovery_dir / "discovery.xml")
+    if live is not None:
         text = "\n".join(live) + ("\n" if live else "")
         project.live_hosts.write_text(text, encoding="utf-8")
         return len(live)
@@ -102,6 +109,35 @@ def extract_live_hosts(project: ProjectPaths) -> int:
     if project.targets_normalized.exists():
         shutil.copyfile(project.targets_normalized, project.live_hosts)
     return sum(1 for _ in project.live_hosts.read_text().splitlines()) if project.live_hosts.exists() else 0
+
+
+def _live_hosts_from_gnmap(gnmap_path: Path) -> Optional[list[str]]:
+    """Extract ``Status: Up`` hosts from Nmap greppable output.
+
+    Equivalent to ``awk '/Status: Up/{print $2}' | sort -Vu``: every line
+    reporting a host as up contributes its address (the second whitespace field).
+    Returns ``None`` when the file is absent so callers can fall back to other
+    discovery sources.
+    """
+    if not gnmap_path.exists():
+        return None
+    live: set[str] = set()
+    for line in gnmap_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if "Status: Up" not in line:
+            continue
+        fields = line.split()
+        if len(fields) >= 2:
+            live.add(fields[1])
+    return sorted(live, key=_ip_key)
+
+
+def _live_hosts_from_xml(discovery_xml: Path) -> Optional[list[str]]:
+    """Extract up hosts from discovery XML, or ``None`` when unavailable."""
+    if not discovery_xml.exists() or not nmap_xml.is_nmap_xml(discovery_xml):
+        return None
+    hosts = nmap_xml.parse_file(discovery_xml)
+    live = [h.address for h in hosts if h.status == "up" and h.address != "unknown"]
+    return sorted(set(live), key=_ip_key)
 
 
 def _ip_key(value: str) -> tuple:
@@ -203,6 +239,14 @@ def run_operations(
 
     to_execute = [op_id for op_id in resolved if _should_run(op_id)]
     total = len(to_execute)
+
+    privileged = [o for o in to_execute if REGISTRY[o].requires_root]
+    if privileged and not is_root():
+        observer.warning(
+            "Not running as root: the scans "
+            f"({', '.join(privileged)}) need raw sockets and will be skipped. "
+            f"{SUDO_HINT}."
+        )
 
     observer.run_started(to_execute)
     try:

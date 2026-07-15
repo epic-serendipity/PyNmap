@@ -18,7 +18,7 @@ from ..parsers.targets import parse_targets_text
 from ..paths import ProjectPaths
 from ..profiles import get_profile
 from ..progress import ProgressMonitor
-from ..runner import is_root, has_passwordless_sudo
+from ..runner import is_root
 from . import selections, viewer
 
 console = Console()
@@ -35,13 +35,12 @@ class RichObserver(engine.Observer):
 
     def __init__(self) -> None:
         self._monitor: ProgressMonitor | None = None
-        # Whether privileged commands can run without an interactive password
-        # prompt. When they cannot, the monitor stays quiet for those ops so it
-        # does not fight with sudo for the terminal.
+        # PyNmap runs as root (``sudo pynmap``), so Nmap commands are launched
+        # directly with no per-command ``sudo`` password prompt to contend with;
+        # the interactive progress keys are therefore always safe to use.
         self._keys_safe = True
 
     def run_started(self, op_ids) -> None:
-        self._keys_safe = is_root() or has_passwordless_sudo()
         show = getattr(config_mod.load_config(), "show_progress", True)
         names = [
             (REGISTRY[o].display_name if o in REGISTRY else o) for o in op_ids
@@ -140,13 +139,12 @@ def main_menu() -> None:
 
 def _privilege_notice() -> None:
     if is_root():
-        console.print("[dim]Running as root.[/dim]")
-    elif has_passwordless_sudo():
-        console.print("[dim]Privileged scans will use passwordless sudo.[/dim]")
+        console.print("[dim]Running as root; privileged scans enabled.[/dim]")
     else:
         console.print(
-            "[yellow]Note:[/yellow] some scans (SYN/UDP/OS/traceroute) need root. "
-            "Run with sudo or configure passwordless sudo for nmap."
+            "[yellow]Note:[/yellow] PyNmap needs root for host discovery and the "
+            "SYN/UDP/OS/traceroute scans. Re-run with [bold]sudo pynmap[/bold]; "
+            "otherwise those scans are skipped."
         )
 
 
