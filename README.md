@@ -91,7 +91,10 @@ pynmap history
 
 ### Privileges
 
-SYN (`-sS`), UDP (`-sU`), OS detection (`-O`), and traceroute need root.
+Host discovery (its ICMP/`-PE`/`-PP`, TCP ACK `-PA`, and UDP `-PU` ping probes),
+SYN (`-sS`), UDP (`-sU`), OS detection (`-O`), and traceroute need root. Running
+discovery unprivileged makes Nmap downgrade to TCP connect() probes, which report
+false-positive live hosts, so PyNmap runs it with `sudo`.
 PyNmap runs the Python program as your normal user and prefixes only the
 privileged Nmap commands with `sudo`, so project files stay owned by you. Run
 with passwordless `sudo` configured for a smooth experience, or launch the whole
