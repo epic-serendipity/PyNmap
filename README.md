@@ -80,7 +80,7 @@ The bundled installer sets up the system tools (`nmap`, `graphviz`,
 (it uses `sudo` only for the system-package step):
 
 ```bash
-git clone <this-repo> && cd PyNmap
+git clone https://github.com/epic-serendipity/PyNmap && cd PyNmap
 ./install.sh
 ```
 
