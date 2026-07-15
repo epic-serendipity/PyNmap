@@ -54,8 +54,46 @@ def is_root() -> bool:
     return hasattr(os, "geteuid") and os.geteuid() == 0
 
 
+def is_wsl() -> bool:
+    """Detect Windows Subsystem for Linux via ``/proc/version``.
+
+    WSL kernels advertise ``microsoft``/``WSL`` in ``/proc/version``. Detecting
+    it lets PyNmap tailor its guidance (e.g. opening reports in the Windows
+    browser) for the common WSL workflow.
+    """
+    try:
+        text = Path("/proc/version").read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return False
+    lowered = text.lower()
+    return "microsoft" in lowered or "wsl" in lowered
+
+
 def has_command(name: str) -> bool:
     return shutil.which(name) is not None
+
+
+def privilege_warning_lines() -> list[str]:
+    """Lines explaining why PyNmap should be run as root, and how.
+
+    Shared by the CLI and the interactive menu so the non-root warning reads
+    identically everywhere. On WSL an extra line points at the ``sudo`` command
+    to use from the WSL shell.
+    """
+    lines = [
+        "PyNmap is not running as root.",
+        "Host discovery and the SYN/UDP/OS/traceroute scans need raw sockets. "
+        "Without root they are skipped, and Nmap's unprivileged connect() "
+        "fallback reports false-positive live hosts.",
+        "Re-run with root privileges, e.g. `sudo pynmap` (or "
+        "`sudo $(command -v pynmap)` to keep a virtualenv's binary).",
+    ]
+    if is_wsl():
+        lines.append(
+            "WSL detected: launch from your WSL shell with `sudo pynmap`; "
+            "generated SVG/HTML reports still open in your Windows browser."
+        )
+    return lines
 
 
 def _now_iso() -> str:

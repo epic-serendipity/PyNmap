@@ -26,6 +26,21 @@ app = typer.Typer(
 )
 
 
+def _warn_if_unprivileged() -> None:
+    """Print the non-root warning to stderr before a scan-capable command.
+
+    Scans still proceed (privileged operations are skipped with a per-op
+    notice), but the up-front warning makes the ``sudo pynmap`` requirement
+    obvious the moment the command is launched.
+    """
+    from .runner import is_root, privilege_warning_lines
+
+    if is_root():
+        return
+    for index, line in enumerate(privilege_warning_lines()):
+        typer.echo(("Warning: " if index == 0 else "  ") + line, err=True)
+
+
 @app.command()
 def new(
     targets: Optional[Path] = typer.Option(
@@ -43,6 +58,7 @@ def new(
     ),
 ) -> None:
     """Create and run a new scan. Falls back to interactive prompts if needed."""
+    _warn_if_unprivileged()
     if not (targets and name and output):
         from .ui.menus import flow_new
 
@@ -88,6 +104,7 @@ def update(
     path: Path = typer.Argument(..., help="Path to an existing scan project."),
 ) -> None:
     """Rerun mutable operations and generate a change report."""
+    _warn_if_unprivileged()
     root = Path(path).expanduser()
     if not manifest_mod.is_valid_project(root):
         typer.echo(f"Not a valid PyNmap project: {root}", err=True)
@@ -108,6 +125,7 @@ def enhance(
     ),
 ) -> None:
     """Run additional operations against an existing project."""
+    _warn_if_unprivileged()
     root = Path(path).expanduser()
     if not manifest_mod.is_valid_project(root):
         typer.echo(f"Not a valid PyNmap project: {root}", err=True)

@@ -14,18 +14,9 @@ from rich.table import Table
 from ..config import Config
 from ..manifest import Manifest
 from ..paths import ProjectPaths
+from ..runner import is_wsl
 
 console = Console()
-
-
-def is_wsl() -> bool:
-    """Detect WSL by looking for 'microsoft'/'WSL' in /proc/version."""
-    try:
-        text = Path("/proc/version").read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        return False
-    lowered = text.lower()
-    return "microsoft" in lowered or "wsl" in lowered
 
 
 def open_external(path: Path, config: Optional[Config] = None) -> bool:
