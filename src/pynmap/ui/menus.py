@@ -51,7 +51,7 @@ class RichObserver(engine.Observer):
 def banner() -> None:
     console.print(
         Panel.fit(
-            f"[bold cyan]NetMapper[/bold cyan] [dim]v{__version__}[/dim]\n"
+            f"[bold cyan]PyNmap[/bold cyan] [dim]v{__version__}[/dim]\n"
             "Nmap orchestration, inventory & reporting",
             border_style="cyan",
         )
@@ -199,7 +199,7 @@ def _prompt_project_path(config: Config, message: str) -> Optional[ProjectPaths]
     raw = selections.prompt_path(message, default=default, only_directories=True)
     root = Path(raw).expanduser()
     if not manifest_mod.is_valid_project(root):
-        console.print(f"[red]Not a valid NetMapper project:[/red] {root}")
+        console.print(f"[red]Not a valid PyNmap project:[/red] {root}")
         return None
     return ProjectPaths(root)
 

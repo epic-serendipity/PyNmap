@@ -2,8 +2,8 @@
 
 from datetime import datetime
 
-from netmapper.comparison.diff import diff_inventories, render_text
-from netmapper.models import HostRecord, Inventory, OSMatch, PortRecord, TraceHop
+from pynmap.comparison.diff import diff_inventories, render_text
+from pynmap.models import HostRecord, Inventory, OSMatch, PortRecord, TraceHop
 
 
 def _host(address, ports=None, hostnames=None, os_name=None, hops=None, status="up"):

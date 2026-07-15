@@ -1,7 +1,7 @@
 """Read, validate, and write the per-project ``manifest.json``.
 
 The manifest is what makes ``update``, ``enhance``, and ``view`` work reliably.
-A directory is only treated as a valid NetMapper project when it contains a
+A directory is only treated as a valid PyNmap project when it contains a
 manifest with the correct ``tool`` marker and a supported ``schema_version`` --
 never merely because it happens to contain an ``.xml`` file.
 """
@@ -21,7 +21,7 @@ from .paths import ProjectPaths
 
 
 class InvalidProjectError(Exception):
-    """Raised when a directory is not a recognised NetMapper project."""
+    """Raised when a directory is not a recognised PyNmap project."""
 
 
 def now_iso() -> str:
@@ -148,14 +148,14 @@ def load_manifest(root: Path | str) -> Manifest:
     project = ProjectPaths(root)
     if not project.manifest.exists():
         raise InvalidProjectError(
-            f"No manifest.json found in {project.root} -- not a NetMapper project."
+            f"No manifest.json found in {project.root} -- not a PyNmap project."
         )
     try:
         data = json.loads(project.manifest.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as exc:
         raise InvalidProjectError(f"Could not read manifest: {exc}") from exc
     if data.get("tool") != TOOL_NAME:
-        raise InvalidProjectError("manifest.json is not a NetMapper manifest.")
+        raise InvalidProjectError("manifest.json is not a PyNmap manifest.")
     version = data.get("schema_version")
     if version is None or int(version) > SCHEMA_VERSION:
         raise InvalidProjectError(

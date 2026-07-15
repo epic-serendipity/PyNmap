@@ -148,7 +148,7 @@ def render_html(diff: ScanDiff, name: str = "") -> str:
 
     esc = _html.escape
     parts = ["<!DOCTYPE html><html><head><meta charset='utf-8'>",
-             f"<title>NetMapper changes: {esc(name)}</title>",
+             f"<title>PyNmap changes: {esc(name)}</title>",
              "<style>body{font-family:Helvetica,Arial,sans-serif;margin:2rem;}"
              "h2{border-bottom:1px solid #ccd;}"
              ".add{color:#186a3b;}.rem{color:#922;}.chg{color:#8a6d00;}"

@@ -1,6 +1,6 @@
 """Global SQLite registry of scan projects.
 
-Stored at ``~/.local/share/netmapper/scans.db``. The registry is a convenience
+Stored at ``~/.local/share/pynmap/scans.db``. The registry is a convenience
 index only -- the portable ``manifest.json`` inside each project directory
 remains the authoritative per-project metadata, so a project stays usable even
 if it is moved to another machine and the registry is lost.

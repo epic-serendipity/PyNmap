@@ -1,4 +1,4 @@
-"""Internal data model for NetMapper.
+"""Internal data model for PyNmap.
 
 Nmap XML (not ``.nmap`` text) is the source of truth. The parser normalises
 raw XML into these dataclasses, and every downstream consumer (CSV/JSON export,

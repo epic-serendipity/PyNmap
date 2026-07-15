@@ -1,6 +1,6 @@
 """Tests for target parsing and normalisation."""
 
-from netmapper.parsers.targets import (
+from pynmap.parsers.targets import (
     classify_target,
     parse_targets_text,
 )

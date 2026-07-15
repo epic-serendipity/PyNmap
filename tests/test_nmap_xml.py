@@ -4,7 +4,7 @@ import textwrap
 
 import pytest
 
-from netmapper.parsers import nmap_xml
+from pynmap.parsers import nmap_xml
 
 
 SAMPLE_XML = textwrap.dedent(

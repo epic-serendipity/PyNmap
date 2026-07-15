@@ -1,4 +1,4 @@
-"""Per-project logging setup writing to ``logs/netmapper.log``."""
+"""Per-project logging setup writing to ``logs/pynmap.log``."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 def get_logger(log_file: Path) -> logging.Logger:
     log_file.parent.mkdir(parents=True, exist_ok=True)
-    logger = logging.getLogger(f"netmapper.{log_file.parent.parent.name}")
+    logger = logging.getLogger(f"pynmap.{log_file.parent.parent.name}")
     logger.setLevel(logging.INFO)
     # Avoid duplicate handlers for the same file across repeated calls.
     for handler in logger.handlers:

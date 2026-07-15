@@ -1,7 +1,7 @@
 """Typer-based command line interface.
 
-Running ``netmapper`` with no arguments opens the interactive menu (handled in
-:mod:`netmapper.main`). The subcommands below provide scriptable access to the
+Running ``pynmap`` with no arguments opens the interactive menu (handled in
+:mod:`pynmap.main`). The subcommands below provide scriptable access to the
 same workflows.
 """
 
@@ -21,7 +21,7 @@ from .profiles import get_profile, PROFILES
 
 app = typer.Typer(
     add_completion=False,
-    help="NetMapper: orchestrate Nmap scans, build inventories, and report.",
+    help="PyNmap: orchestrate Nmap scans, build inventories, and report.",
     no_args_is_help=False,
 )
 
@@ -90,7 +90,7 @@ def update(
     """Rerun mutable operations and generate a change report."""
     root = Path(path).expanduser()
     if not manifest_mod.is_valid_project(root):
-        typer.echo(f"Not a valid NetMapper project: {root}", err=True)
+        typer.echo(f"Not a valid PyNmap project: {root}", err=True)
         raise typer.Exit(code=1)
     from .ui.menus import RichObserver
     from .comparison.diff import render_text
@@ -110,7 +110,7 @@ def enhance(
     """Run additional operations against an existing project."""
     root = Path(path).expanduser()
     if not manifest_mod.is_valid_project(root):
-        typer.echo(f"Not a valid NetMapper project: {root}", err=True)
+        typer.echo(f"Not a valid PyNmap project: {root}", err=True)
         raise typer.Exit(code=1)
     if not operations:
         from .ui.menus import flow_enhance
@@ -133,7 +133,7 @@ def view(
     """Inspect a project's manifest and browse its artifacts."""
     root = Path(path).expanduser()
     if not manifest_mod.is_valid_project(root):
-        typer.echo(f"Not a valid NetMapper project: {root}", err=True)
+        typer.echo(f"Not a valid PyNmap project: {root}", err=True)
         raise typer.Exit(code=1)
     from .ui import viewer
     from .ui.menus import flow_view

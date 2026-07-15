@@ -29,10 +29,10 @@ def _host_label(host: HostRecord) -> str:
     return "\\n".join(_escape(line) for line in lines)
 
 
-def build_dot(inventory: Inventory, title: str = "NetMapper") -> str:
+def build_dot(inventory: Inventory, title: str = "PyNmap") -> str:
     """Build a Graphviz DOT document from hosts and traceroute data."""
     out: list[str] = []
-    out.append(f'digraph netmapper {{')
+    out.append(f'digraph pynmap {{')
     out.append(f'  labelloc="t";')
     out.append(f'  label="{_escape(title)}";')
     out.append('  rankdir=LR;')
@@ -87,7 +87,7 @@ def render(dot_path: Path, output_path: Path, fmt: str) -> bool:
 
 
 def generate_map(
-    inventory: Inventory, maps_dir: Path, title: str = "NetMapper"
+    inventory: Inventory, maps_dir: Path, title: str = "PyNmap"
 ) -> dict[str, Optional[Path]]:
     """Write network-map.dot and render SVG/PNG when Graphviz is available."""
     maps_dir.mkdir(parents=True, exist_ok=True)
