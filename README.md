@@ -73,6 +73,31 @@ sudo apt install -y nmap graphviz xsltproc
 
 ## Installation
 
+### Quick install (Linux & WSL)
+
+The bundled installer sets up the system tools (`nmap`, `graphviz`,
+`xsltproc`) and the `pynmap` command in one step. Run it as your normal user
+(it uses `sudo` only for the system-package step):
+
+```bash
+git clone <this-repo> && cd PyNmap
+./install.sh
+```
+
+The installer auto-detects your package manager (apt, dnf/yum, pacman, zypper,
+apk) and installs PyNmap with `pipx` when available, otherwise into a
+self-contained virtualenv at `.venv/` linked onto your `PATH` at
+`~/.local/bin/pynmap`. Useful flags:
+
+```bash
+./install.sh --method venv   # force a virtualenv install
+./install.sh --method pipx   # force a pipx install
+./install.sh --dev           # editable install with dev + lxml extras
+./install.sh --skip-system   # leave system packages untouched
+```
+
+### Manual install
+
 ```bash
 python3 -m pip install .
 # or, for development:
@@ -80,6 +105,22 @@ python3 -m pip install -e '.[dev]'
 ```
 
 This installs the `pynmap` command.
+
+### Windows Subsystem for Linux (WSL)
+
+PyNmap is designed to run comfortably under WSL. Install it inside your WSL
+distribution with `./install.sh` (or the manual steps above) and run scans
+from the WSL shell. Generated SVG maps and HTML reports open in your Windows
+default browser automatically via `explorer.exe`; you can change the opener in
+**Settings** (`wsl_browser_command`). The installer detects WSL and prints
+these notes for you.
+
+### The non-root warning
+
+Because its scans need raw sockets, PyNmap warns the moment you launch it
+without root — both in the interactive menu and before the `new`, `update`,
+and `enhance` subcommands — and reminds you to re-run with `sudo pynmap`.
+Read-only commands (`view`, `history`) never need root and are not gated.
 
 ## Usage
 

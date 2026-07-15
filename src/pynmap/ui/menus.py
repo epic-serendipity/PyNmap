@@ -18,7 +18,7 @@ from ..parsers.targets import parse_targets_text
 from ..paths import ProjectPaths
 from ..profiles import get_profile
 from ..progress import ProgressMonitor
-from ..runner import is_root
+from ..runner import is_root, privilege_warning_lines
 from . import selections, viewer
 
 console = Console()
@@ -140,12 +140,16 @@ def main_menu() -> None:
 def _privilege_notice() -> None:
     if is_root():
         console.print("[dim]Running as root; privileged scans enabled.[/dim]")
-    else:
-        console.print(
-            "[yellow]Note:[/yellow] PyNmap needs root for host discovery and the "
-            "SYN/UDP/OS/traceroute scans. Re-run with [bold]sudo pynmap[/bold]; "
-            "otherwise those scans are skipped."
+        return
+    lines = privilege_warning_lines()
+    body = "\n".join(lines[1:])
+    console.print(
+        Panel(
+            body,
+            title="[yellow]Not running as root[/yellow]",
+            border_style="yellow",
         )
+    )
 
 
 # --- new scan --------------------------------------------------------------
