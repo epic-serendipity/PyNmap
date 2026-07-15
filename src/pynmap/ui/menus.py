@@ -10,13 +10,14 @@ from rich.panel import Panel
 from rich.table import Table
 
 from .. import __version__, config as config_mod, engine, manifest as manifest_mod
-from .. import registry
+from .. import progress, registry
 from ..config import Config, DEFAULT_RECOMMENDED_OPERATIONS
 from ..operations import REGISTRY, resolve_dependencies
 from ..operations.base import OperationRunResult
 from ..parsers.targets import parse_targets_text
 from ..paths import ProjectPaths
 from ..profiles import get_profile
+from ..progress import ProgressMonitor
 from ..runner import is_root, has_passwordless_sudo
 from . import selections, viewer
 
@@ -24,20 +25,61 @@ console = Console()
 
 
 class RichObserver(engine.Observer):
-    """Surface engine progress through the Rich console."""
+    """Surface engine progress through the Rich console.
+
+    Also owns the :class:`ProgressMonitor` for the run so an ASCII spinner
+    animates while commands run and a progress report can be printed when the
+    user presses the spacebar. All console output is routed through the
+    monitor so it never garbles the live spinner line.
+    """
+
+    def __init__(self) -> None:
+        self._monitor: ProgressMonitor | None = None
+        # Whether privileged commands can run without an interactive password
+        # prompt. When they cannot, the monitor stays quiet for those ops so it
+        # does not fight with sudo for the terminal.
+        self._keys_safe = True
+
+    def run_started(self, op_ids) -> None:
+        self._keys_safe = is_root() or has_passwordless_sudo()
+        show = getattr(config_mod.load_config(), "show_progress", True)
+        names = [
+            (REGISTRY[o].display_name if o in REGISTRY else o) for o in op_ids
+        ]
+        self._monitor = ProgressMonitor(console, show_progress=show)
+        self._monitor.set_plan(names)
+        self._monitor.start()
+        progress.set_active_monitor(self._monitor)
+
+    def run_finished(self) -> None:
+        if self._monitor is not None:
+            progress.set_active_monitor(None)
+            self._monitor.stop()
+            self._monitor = None
+
+    def _emit(self, message: str) -> None:
+        if self._monitor is not None:
+            self._monitor.print(message)
+        else:
+            console.print(message)
 
     def info(self, message: str) -> None:
-        console.print(f"[cyan]i[/cyan] {message}")
+        self._emit(f"[cyan]i[/cyan] {message}")
 
     def warning(self, message: str) -> None:
-        console.print(f"[yellow]![/yellow] {message}")
+        self._emit(f"[yellow]![/yellow] {message}")
 
     def operation_start(self, op_id: str, index: int, total: int) -> None:
         op = REGISTRY.get(op_id)
         name = op.display_name if op else op_id
-        console.print(f"[bold]({index}/{total})[/bold] Running [green]{name}[/green]...")
+        if self._monitor is not None:
+            quiet = bool(op and op.requires_root) and not self._keys_safe
+            self._monitor.begin_operation(op_id, name, index, total, quiet=quiet)
+        self._emit(f"[bold]({index}/{total})[/bold] Running [green]{name}[/green]...")
 
     def operation_end(self, result: OperationRunResult) -> None:
+        if self._monitor is not None:
+            self._monitor.end_operation(result.status)
         colour = {
             "complete": "green",
             "failed": "red",
@@ -45,7 +87,7 @@ class RichObserver(engine.Observer):
             "skipped": "dim",
         }.get(result.status, "white")
         extra = f" - {result.message}" if result.message else ""
-        console.print(f"    [{colour}]{result.status}[/{colour}]{extra}")
+        self._emit(f"    [{colour}]{result.status}[/{colour}]{extra}")
 
 
 def banner() -> None:
@@ -324,6 +366,7 @@ def flow_settings(config: Config) -> None:
     table.add_row("Last output directory", config.last_output_directory or "-")
     table.add_row("Default timing", config.default_timing)
     table.add_row("Open results after scan", str(config.open_results_after_scan))
+    table.add_row("Show scan progress spinner", str(config.show_progress))
     table.add_row("WSL browser command", config.wsl_browser_command)
     table.add_row("Last selected operations", ", ".join(config.last_selected_operations))
     console.print(table)
@@ -333,6 +376,7 @@ def flow_settings(config: Config) -> None:
         [
             ("timing", "Default Nmap timing (T0-T5)"),
             ("open", "Toggle open-results-after-scan"),
+            ("progress", "Toggle scan progress spinner"),
             ("browser", "WSL browser command"),
             ("reset", "Reset operations to recommended defaults"),
             ("back", "Back"),
@@ -344,6 +388,8 @@ def flow_settings(config: Config) -> None:
         )
     elif choice == "open":
         config.open_results_after_scan = not config.open_results_after_scan
+    elif choice == "progress":
+        config.show_progress = not config.show_progress
     elif choice == "browser":
         config.wsl_browser_command = selections.prompt_text(
             "WSL browser command:", default=config.wsl_browser_command
