@@ -13,6 +13,7 @@ class OsDetectionOperation(Operation):
     description = "TCP/IP stack fingerprinting to guess operating systems."
     dependencies = ("discovery",)
     outputs = ("os/os-detection.xml",)
+    order = 50
     becomes_stale = True
     rerun_on_update = True
     requires_root = True  # -O needs raw sockets

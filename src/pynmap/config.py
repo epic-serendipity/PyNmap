@@ -35,6 +35,11 @@ class Config:
     wsl_browser_command: str = "explorer.exe"
     #: Show the ASCII spinner and spacebar progress report during scans.
     show_progress: bool = True
+    #: Network-map style: "enhanced" (rich HTML-table map with per-host port
+    #: tables, OS/MAC/NSE details, subnet grouping, legend and coverage node)
+    #: or "standard" (compact text-label boxes). Both integrate all data the
+    #: scan collected.
+    map_style: str = "enhanced"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

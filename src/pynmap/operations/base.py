@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import heapq
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -70,6 +71,12 @@ class Operation:
     becomes_stale: bool = False
     rerun_on_update: bool = False
     requires_root: bool = False
+    #: Relative run priority. Among operations whose dependencies are already
+    #: satisfied, the lowest ``order`` runs first. Data-collection scans use low
+    #: values; the derived reporting/graphics operations use high values so the
+    #: inventory, HTML report, and — last of all — the network map are produced
+    #: only after every scan that feeds them has finished.
+    order: int = 50
     #: Modifiers change other operations' commands rather than running Nmap.
     is_modifier: bool = False
     #: True for scan operations that read the discovered live-host list.
@@ -158,26 +165,59 @@ def resolve_dependencies(
 
 
 def topo_sort(op_ids: list[str], registry: dict[str, "Operation"]) -> list[str]:
-    """Order operations so dependencies precede dependents (stable)."""
-    result: list[str] = []
-    visited: set[str] = set()
-    temp: set[str] = set()
+    """Order operations so dependencies precede dependents.
 
-    def visit(op_id: str) -> None:
-        if op_id in visited or op_id not in op_ids:
-            return
-        if op_id in temp:  # cycle guard
-            return
-        temp.add(op_id)
+    This is a priority-aware topological sort. Dependencies always run before
+    the operations that need them; among operations that are *equally ready*
+    (all prerequisites satisfied), the one with the lowest
+    :attr:`Operation.order` runs first, falling back to the input order for a
+    stable result.
+
+    The practical effect is that data-collection scans run ahead of the derived
+    reporting/graphics operations regardless of the order the caller requested
+    them in. So the inventory, HTML report, and the network map are generated
+    only after every scan that feeds them has completed, and the graphic is the
+    very last thing produced.
+    """
+    ids = list(dict.fromkeys(op_ids))  # de-duplicate, keep first occurrence
+    id_set = set(ids)
+    input_index = {op_id: i for i, op_id in enumerate(ids)}
+
+    remaining_deps: dict[str, set[str]] = {op_id: set() for op_id in ids}
+    dependents: dict[str, set[str]] = {op_id: set() for op_id in ids}
+    for op_id in ids:
         op = registry.get(op_id)
-        if op is not None:
-            for dep in op.dependencies:
-                if dep in op_ids:
-                    visit(dep)
-        temp.discard(op_id)
-        visited.add(op_id)
-        result.append(op_id)
+        if op is None:
+            continue
+        for dep in op.dependencies:
+            if dep in id_set and dep != op_id:
+                remaining_deps[op_id].add(dep)
+                dependents[dep].add(op_id)
 
-    for op_id in op_ids:
-        visit(op_id)
+    def sort_key(op_id: str) -> tuple[int, int, str]:
+        op = registry.get(op_id)
+        order = getattr(op, "order", 50) if op is not None else 50
+        return (order, input_index[op_id], op_id)
+
+    heap: list[tuple[int, int, str]] = [
+        sort_key(op_id) for op_id in ids if not remaining_deps[op_id]
+    ]
+    heapq.heapify(heap)
+    queued = {op_id for op_id in ids if not remaining_deps[op_id]}
+
+    result: list[str] = []
+    while heap:
+        _order, _idx, op_id = heapq.heappop(heap)
+        result.append(op_id)
+        for dependent in dependents[op_id]:
+            remaining_deps[dependent].discard(op_id)
+            if not remaining_deps[dependent] and dependent not in queued:
+                heapq.heappush(heap, sort_key(dependent))
+                queued.add(dependent)
+
+    # Any nodes left out (only possible with a dependency cycle) are appended in
+    # their input order so no requested operation is silently dropped.
+    for op_id in ids:
+        if op_id not in result:
+            result.append(op_id)
     return result

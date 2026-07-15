@@ -39,6 +39,9 @@ class InventoryOperation(Operation):
         "inventory/services.csv",
         "inventory/routes.json",
     )
+    # Derived: run after every data-collection scan so the inventory reflects
+    # OS detection, service versions, UDP results, etc. from this run.
+    order = 80
     becomes_stale = True
     rerun_on_update = True
     requires_root = False
@@ -63,6 +66,7 @@ class HtmlReportOperation(Operation):
     description = "Produce an HTML scan report (Nmap stylesheet when available)."
     dependencies = ("tcp_top_1000",)
     outputs = ("reports/scan-report.html",)
+    order = 90  # derived: after all scans, before the network map
     becomes_stale = True
     rerun_on_update = True
     requires_root = False

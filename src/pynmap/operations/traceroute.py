@@ -13,6 +13,7 @@ class TracerouteOperation(Operation):
     description = "Record network paths (hops) to each live host."
     dependencies = ("discovery",)
     outputs = ("traceroute/traceroute.xml",)
+    order = 60
     becomes_stale = True
     rerun_on_update = True
     requires_root = True  # --traceroute uses raw packets

@@ -13,6 +13,7 @@ class DiscoveryOperation(Operation):
     description = "Ping/ARP sweep to find live hosts before port scanning."
     dependencies = ()
     outputs = ("discovery/discovery.xml",)
+    order = 10  # must run first; everything depends on the live-host list
     becomes_stale = True
     rerun_on_update = True
     # The ICMP (-PE/-PP), TCP ACK (-PA) and UDP (-PU) host-discovery probes all
